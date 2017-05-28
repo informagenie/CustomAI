@@ -4,11 +4,9 @@ require __DIR__ . '/src/CustomAI.php';
 use Informagenie\CustomAI;
 
 $db = new PDO('sqlite:database.sqlite');
-
 //$cui = new CustomAI($db, 'person');
 CustomAI::create(['dsn' => $db, 'table' => 'Person', 'column' => 'id']);
 if (!empty($_POST)) {
-
     $req = $db->prepare('INSERT INTO Person VALUES(?, ?, ?)');
     $success = $req->execute(array(CustomAI::id(), $_POST['nom'], $_POST['postnom']));
 }

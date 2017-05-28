@@ -4,7 +4,7 @@ namespace Informagenie;
 class CustomAI
 {
 
-    const DEFAULT_MASK = '2017(0000000)';
+    const DEFAULT_MASK = '2018(0000000)';
 
 
     static public $constant;
@@ -16,10 +16,46 @@ class CustomAI
 
     function __construct(\PDO $dsn, $table, $column = 'id')
     {
-        static::$dsn = $dsn;
-        static::$table = $table;
-        static::$column = $column;
+        static::init($dsn, $table, $column);
+    }
+
+    static function init()
+    {
+        $args = func_get_args();
+        if (1 == sizeof($args) AND is_array($args[0])) {
+            $options = $args[0];
+            foreach ($options as $index => $option) {
+                if (property_exists(static::class, $index)) {
+                    $method = 'set' . ucfirst($index);
+                    call_user_func(array(static::class, $method), $option);
+                }
+            }
+        } elseif (sizeof($args) >= 2) {
+            static::setDsn($args[0]);
+            static::setTable($args[1]);
+            static::setColumn($args[2]);
+        } else {
+            throw new \Exception('Les arguments ' . print_r($args, true) . 'sonts invalides ou insuffisant');
+        }
         static::default_params();
+    }
+
+    private function setDsn($dsn)
+    {
+        if (!$dsn instanceof \PDO) {
+            throw new \Exception('dsn doit être affecté d\'une valeur de l\'instance PDO. ' . gettype($dsn) . ' est le type de la variable donnée');
+        }
+        static::$dsn = $dsn;
+    }
+
+    private function setTable($table)
+    {
+        static::$table = !empty($table) ? $table : 'table';
+    }
+
+    private function setColumn($column)
+    {
+        static::$column = !empty($column) ? $column : 'id';
     }
 
     protected function default_params()
@@ -54,11 +90,7 @@ class CustomAI
 
     static function create($options)
     {
-        foreach ($options as $item => $option) {
-            static::$$item = $option;
-        }
-
-        static::default_params();
+        static::init($options);
     }
 
     static function id()
@@ -71,8 +103,8 @@ class CustomAI
         $data = static::fetch_last();
         $number = static::incrementable($data);
         if (!static::isCoherent()) {
-            echo new \Exception('L\'incoréance existe entre l\'id de la base de données ('.
-                static::constant($data). ') et la masque actuelle ('.static::constant().')', E_USER_NOTICE);
+            throw new \Exception('L\'incoréance existe entre l\'id de la base de données (' .
+                static::constant($data) . ') et la masque actuelle (' . static::constant() . ')', E_USER_NOTICE);
         }
         return static::constant() . static::increment($number);
     }
@@ -88,7 +120,8 @@ class CustomAI
         }
     }
 
-    protected function rigth_mask()
+    protected
+    function rigth_mask()
     {
         return static::constant() . static::incrementable();
     }
@@ -98,7 +131,8 @@ class CustomAI
         return (bool)preg_match("#^" . static::constant() . "#i", static::fetch_last());
     }
 
-    protected function increment($number)
+    protected
+    function increment($number)
     {
         $total = strlen($number);
         $number++;
@@ -106,7 +140,8 @@ class CustomAI
         return static::normalize($number);
     }
 
-    protected function normalize($number)
+    protected
+    function normalize($number)
     {
         $lenght_mask = strlen(static::incrementable(static::$mask));
         while (strlen($number) < $lenght_mask) {
@@ -115,5 +150,4 @@ class CustomAI
 
         return $number;
     }
-
 }
