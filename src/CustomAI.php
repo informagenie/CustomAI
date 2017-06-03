@@ -1,16 +1,49 @@
 <?php
+
 namespace Informagenie;
 
 class CustomAI
 {
+    /**
+     * Default value of mask
+     *
+     * @const DEFAULT_MASK
+     */
+    const DEFAULT_MASK = '2018(0000)';
 
-    const DEFAULT_MASK = '2018(0000000)';
+    /**
+     * Unvariable value of mask
+     *
+     * @var mixed
+     */
+    static protected $constant;
 
+    /**
+     * A primary key column name
+     *
+     * @var String
+     */
+    static protected $column;
 
-    static public $constant;
-    static public $column;
-    static public $table;
-    static public $dsn;
+    /**
+     * A table
+     *
+     * @var String
+     */
+    static protected $table;
+
+    /**
+     * Instance of connexion to database
+     *
+     * @var \PDO
+     */
+    static protected $dsn;
+
+    /**
+     * A mask of auto increment value
+     *
+     * @var String
+     */
     static public $mask;
 
 
@@ -19,6 +52,12 @@ class CustomAI
         static::init($dsn, $table, $column);
     }
 
+    /**
+     * Initialize all parameters
+     *
+     * @param Array | String $options
+     * @throws \Exception
+     */
     static function init()
     {
         $args = func_get_args();
@@ -40,64 +79,100 @@ class CustomAI
         static::default_params();
     }
 
-    private function setDsn($dsn)
+
+    /**
+     * Setter of $dsn
+     *
+     * @param \PDO $dsn
+     * @throws \Exception
+     * @return NULL
+     */
+    public function setDsn($dsn)
     {
         if (!$dsn instanceof \PDO) {
             throw new \Exception('dsn doit être affecté d\'une valeur de l\'instance PDO. ' . gettype($dsn) . ' est le type de la variable donnée');
         }
         static::$dsn = $dsn;
+        static::$dsn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     }
 
-    private function setTable($table)
+    /**
+     * Setter of $table
+     *
+     * @param $table
+     * @return NULL
+     */
+    public function setTable($table)
     {
         static::$table = !empty($table) ? $table : 'table';
     }
 
-    private function setColumn($column)
+    /**
+     * Setter of $column
+     *
+     * @param String $column
+     * @return NULL
+     */
+    public function setColumn($column)
     {
         static::$column = !empty($column) ? $column : 'id';
     }
 
+    /**
+     * Set default value of attributes
+     *
+     */
     protected function default_params()
     {
         static::$mask = (empty(static::$mask)) ? static::DEFAULT_MASK : static::$mask;
         static::$constant = static::constant();
-    }
-
-    public function constant($mask = "")
-    {
-        $mask = (empty($mask)) ? static::$mask : $mask;
-        return trim(strstr($mask, static::incrementable($mask), true), '() ');
-    }
-
-    public static function incrementable($mask = "")
-    {
-        $mask = empty($mask) ? static::$mask : $mask;
-
-        if (!preg_match("#\(.+\)#i", $mask)) {
-            return substr($mask, strlen($mask) - strlen(static::incrementable(static::$mask)));
-        } else {
-            preg_match("#(\(.+)\)#i", $mask, $match);
-            $incrementable = ltrim($match[1], '() ');
-            return $incrementable;
-        }
-
+        static::$column = (empty(static::$column)) ? 'id' : static::$column;
     }
 
     /**
-     * Static methode
+     * Retrieve a unvariable value of a mask
+     *
+     * @param string $mask
+     * @return string
      */
+    protected function constant($mask = "")
+    {
+        $mask = (empty($mask)) ? static::$mask : $mask;
+        preg_match("#(.{0,})\(#i", $mask, $match);
+        if (!isset($match[1])) {
+            throw new \Exception("La masque doit respecter les normes suivantes : CCCC...(XXXX...) ou (XXXX...) celle dans la base de données est différente de celle ci");
+        }
+        return $match[1];
+    }
 
+    /**
+     * Create staticaly a instance
+     *
+     * @param $options
+     * @throws \Exception
+     */
     static function create($options)
     {
         static::init($options);
     }
 
+    /**
+     * Retrieve staticaly an id
+     *
+     * @return string
+     * @throws \Exception
+     */
     static function id()
     {
         return static::generate();
     }
 
+    /**
+     * Retrieve an id
+     *
+     * @return string
+     * @throws \Exception
+     */
     function generate()
     {
         $data = static::fetch_last();
@@ -109,6 +184,12 @@ class CustomAI
         return static::constant() . static::increment($number);
     }
 
+    /**
+     * fetch last id value
+     *
+     * @return string
+     * @throws \Exception
+     */
     protected function fetch_last()
     {
         $data = static::$dsn->query("SELECT " . static::$column . " FROM " . static::$table . " ORDER BY " . static::$column . " DESC");
@@ -120,19 +201,55 @@ class CustomAI
         }
     }
 
-    protected
-    function rigth_mask()
+    /**
+     * Retrieve a right mask whitout ()
+     *
+     * @return string
+     */
+    protected function rigth_mask()
     {
         return static::constant() . static::incrementable();
     }
 
-    static function isCoherent()
+    /**
+     * Retrieve a variable value of a mask
+     *
+     * @param string $mask
+     * @return string
+     */
+    protected static function incrementable($mask = "")
     {
-        return (bool)preg_match("#^" . static::constant() . "#i", static::fetch_last());
+        $mask = empty($mask) ? static::$mask : $mask;
+        if (!preg_match("#\(.{0,}\)#i", $mask)) {
+            return (int) substr($mask, strlen($mask) - strlen(static::incrementable(static::$mask)));
+        } else {
+            preg_match("#(\(.{0,})\)#i", $mask, $match);
+            $incrementable = ltrim($match[1], '() ');
+            return $incrementable;
+        }
+
     }
 
-    protected
-    function increment($number)
+    /**
+     * Check if database data mask is coherent with actualy mask
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    static function isCoherent()
+    {
+        return
+            (bool)(strlen(static::rigth_mask()) >= strlen(static::fetch_last()) &&
+                preg_match("#^" . static::constant() . "#i", static::fetch_last()));
+    }
+
+    /**
+     * Increment a $number
+     *
+     * @param $number
+     * @return string
+     */
+    protected function increment($number)
     {
         $total = strlen($number);
         $number++;
@@ -140,8 +257,13 @@ class CustomAI
         return static::normalize($number);
     }
 
-    protected
-    function normalize($number)
+    /**
+     * Format number after 0
+     *
+     * @param $number
+     * @return string
+     */
+    protected function normalize($number)
     {
         $lenght_mask = strlen(static::incrementable(static::$mask));
         while (strlen($number) < $lenght_mask) {
