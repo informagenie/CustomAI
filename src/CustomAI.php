@@ -5,7 +5,7 @@ namespace Informagenie;
 class CustomAI
 {
     /**
-     * Valeur par defaut de la masque
+     * Valeur par defaut de le masque
      *
      * @const DEFAULT_MASK
      */
@@ -40,16 +40,16 @@ class CustomAI
     static protected $dsn;
 
     /**
-     * La masque de la valeur d'auto incremente
+     * le masque de la valeur d'auto incremente
      *
      * @var String
      */
     static public $mask;
 
 
-    function __construct(\PDO $dsn, $table, $column = 'id')
+    function __construct(\PDO $dsn, $table, $column = 'id', $mask = self::DEFAULT_MASK)
     {
-        static::init($dsn, $table, $column);
+        static::init($dsn, $table, $column, $mask);
     }
 
     /**
@@ -73,6 +73,7 @@ class CustomAI
             static::setDsn($args[0]);
             static::setTable($args[1]);
             static::setColumn($args[2]);
+            static::setMask($args[3]);
         } else {
             throw new \Exception('Les arguments ' . print_r($args, true) . 'sonts invalides ou insuffisant');
         }
@@ -115,6 +116,15 @@ class CustomAI
         static::$column = !empty($column) ? $column : 'id';
     }
 
+    public function setMask($mask)
+    {
+        if(!preg_match("#\(.{0,}\)#i", $mask))
+        {
+            throw new \Exception("Masque $mask invalid");
+        }
+        static::$mask = $mask;
+    }
+
     /**
      * Initialise les valeurs par défault
      *
@@ -127,7 +137,7 @@ class CustomAI
     }
 
     /**
-     * Retourne la partie constante de la masque $mask
+     * Retourne la partie constante de le masque $mask
      *
      * @param string $mask
      * @return string
@@ -137,7 +147,7 @@ class CustomAI
         $mask = (empty($mask)) ? static::$mask : $mask;
         preg_match("#(.{0,})\(#i", $mask, $match);
         if (!isset($match[1])) {
-            throw new \Exception("La masque doit respecter les normes suivantes : CCCC...(XXXX...) ou (XXXX...) celle dans la base de données est différente de celle ci");
+            throw new \Exception("le masque doit respecter les normes suivantes : CCCC...(XXXX...) ou (XXXX...) celle dans la base de données est différente de celle ci");
         }
         return $match[1];
     }
@@ -166,7 +176,7 @@ class CustomAI
 
         if (!static::isCoherent()) {
             throw new \Exception('L\'incoréance existe entre l\'id de la base de données (' .
-                static::constant($data) . ') et la masque actuelle (' . static::constant() . ')', E_USER_NOTICE);
+                static::constant($data) . ') et le masque actuelle (' . static::constant() . ')', E_USER_NOTICE);
         }
 
         $number = static::incrementable($data);
@@ -202,7 +212,7 @@ class CustomAI
     }
 
     /**
-     * Retourne la masque sans les paranthèses ()
+     * Retourne le masque sans les paranthèses ()
      *
      * @return string
      */
@@ -212,7 +222,7 @@ class CustomAI
     }
 
     /**
-     * Retourne la partie variable ou incrementable de la masque $mask ou $this->mask
+     * Retourne la partie variable ou incrementable de le masque $mask ou $this->mask
      *
      * @param string $mask
      * @return string
@@ -231,7 +241,7 @@ class CustomAI
     }
 
     /**
-     * Vérifie si la masque de l'instance et de la base de données sont cohérentes
+     * Vérifie si le masque de l'instance et de la base de données sont cohérentes
      *
      * @return bool
      * @throws \Exception
@@ -265,7 +275,7 @@ class CustomAI
      */
     protected function normalize($number)
     {
-        $lenght_mask = strlen(static::incrementable(static::$mask));
+        $lenght_mask = strlen(static::incrementable());
         while (strlen($number) < $lenght_mask) {
             $number = (int)0 . $number;
         }
