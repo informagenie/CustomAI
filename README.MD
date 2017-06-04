@@ -10,11 +10,12 @@ Customize le système d'auto_incrément mysql depuis PHP
     $db = new PDO('mysql:host=localhost;dbname=root', 'root', '');
     CustomAI::create(['dsn'=>$db, 'table'=>'Users', 'column'=>'id']);
     CustomAI::$mask = "ETUDIANT_(00000)";
-    echo CustomAI::id(); // affiche ETUDIANT_00001
+    echo CustomAI::auto_increment(); // affiche ETUDIANT_00001
     /*
         Le prochain enregistrement sera ETUDIANT_00002, ETUDIANT_00003, ETUDIANT_00004...ETUDIANT_99999 and ETUDIANT_100000
     */
 ```
+
 
 ## Installation
 ### Avec composer
@@ -39,14 +40,14 @@ use Informagenie\CustomAI;
     $db = new PDO('mysql:host=localhost;dbname=root', 'root', '');
     CustomAI::create(['dsn'=>$db, 'table'=>'Users', 'column'=>'id']);
     CustomAI::$mask = 'ETUDIANT_(00000)'; // Valeur par default est 201700001
-    echo CustomAI::id(); // affiche ETUDIANT_00001
+    echo CustomAI::auto_increment(); // affiche ETUDIANT_00001
 ```
 ### Avec instance
 ```
     $db = new PDO('mysql:host=localhost;dbname=root', 'root', '');
     $cuai = new CustomAI($db, 'Users', 'id');
     $cuai::$mask = 'ETUDIANT_(00000)';
-    echo $cuai->generate() // or $cuai::id()
+    echo $cuai->auto_increment()
 ```
 
 ### Masque

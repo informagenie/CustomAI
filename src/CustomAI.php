@@ -5,42 +5,42 @@ namespace Informagenie;
 class CustomAI
 {
     /**
-     * Default value of mask
+     * Valeur par defaut de la masque
      *
      * @const DEFAULT_MASK
      */
     const DEFAULT_MASK = '2018(0000)';
 
     /**
-     * Unvariable value of mask
+     * La partie constante de $mask
      *
      * @var mixed
      */
     static protected $constant;
 
     /**
-     * A primary key column name
+     * La colonne clé primaire $table
      *
      * @var String
      */
     static protected $column;
 
     /**
-     * A table
+     * La table
      *
      * @var String
      */
     static protected $table;
 
     /**
-     * Instance of connexion to database
+     * L'instance de la connexion dans la base de données
      *
      * @var \PDO
      */
     static protected $dsn;
 
     /**
-     * A mask of auto increment value
+     * La masque de la valeur d'auto incremente
      *
      * @var String
      */
@@ -53,7 +53,7 @@ class CustomAI
     }
 
     /**
-     * Initialize all parameters
+     * Initialise les parametres
      *
      * @param Array | String $options
      * @throws \Exception
@@ -81,23 +81,20 @@ class CustomAI
 
 
     /**
-     * Setter of $dsn
+     * Comutateur de $dsn
      *
      * @param \PDO $dsn
      * @throws \Exception
      * @return NULL
      */
-    public function setDsn($dsn)
+    public function setDsn(\PDO $dsn)
     {
-        if (!$dsn instanceof \PDO) {
-            throw new \Exception('dsn doit être affecté d\'une valeur de l\'instance PDO. ' . gettype($dsn) . ' est le type de la variable donnée');
-        }
         static::$dsn = $dsn;
         static::$dsn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     }
 
     /**
-     * Setter of $table
+     * Comutateur de $table
      *
      * @param $table
      * @return NULL
@@ -108,7 +105,7 @@ class CustomAI
     }
 
     /**
-     * Setter of $column
+     * Comutateur de $column
      *
      * @param String $column
      * @return NULL
@@ -119,7 +116,7 @@ class CustomAI
     }
 
     /**
-     * Set default value of attributes
+     * Initialise les valeurs par défault
      *
      */
     protected function default_params()
@@ -130,7 +127,7 @@ class CustomAI
     }
 
     /**
-     * Retrieve a unvariable value of a mask
+     * Retourne la partie constante de la masque $mask
      *
      * @param string $mask
      * @return string
@@ -146,46 +143,49 @@ class CustomAI
     }
 
     /**
-     * Create staticaly a instance
+     * Initialise la classe sans instanciation
      *
-     * @param $options
+     * @param Array $options
      * @throws \Exception
      */
-    static function create($options)
+    public static function create($options)
     {
         static::init($options);
+        return static::auto_increment();
     }
 
     /**
-     * Retrieve staticaly an id
+     * Retourne l'id auto incrementé généré
      *
      * @return string
      * @throws \Exception
      */
-    static function id()
-    {
-        return static::generate();
-    }
-
-    /**
-     * Retrieve an id
-     *
-     * @return string
-     * @throws \Exception
-     */
-    function generate()
+    public static function auto_increment()
     {
         $data = static::fetch_last();
-        $number = static::incrementable($data);
+
         if (!static::isCoherent()) {
             throw new \Exception('L\'incoréance existe entre l\'id de la base de données (' .
                 static::constant($data) . ') et la masque actuelle (' . static::constant() . ')', E_USER_NOTICE);
         }
+
+        $number = static::incrementable($data);
+
         return static::constant() . static::increment($number);
     }
 
     /**
-     * fetch last id value
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public function __toString()
+    {
+        return static::auto_increment();
+    }
+
+    /**
+     * Retourne le dernier id depuis la base de donnée
      *
      * @return string
      * @throws \Exception
@@ -202,7 +202,7 @@ class CustomAI
     }
 
     /**
-     * Retrieve a right mask whitout ()
+     * Retourne la masque sans les paranthèses ()
      *
      * @return string
      */
@@ -212,7 +212,7 @@ class CustomAI
     }
 
     /**
-     * Retrieve a variable value of a mask
+     * Retourne la partie variable ou incrementable de la masque $mask ou $this->mask
      *
      * @param string $mask
      * @return string
@@ -221,7 +221,7 @@ class CustomAI
     {
         $mask = empty($mask) ? static::$mask : $mask;
         if (!preg_match("#\(.{0,}\)#i", $mask)) {
-            return (int) substr($mask, strlen($mask) - strlen(static::incrementable(static::$mask)));
+            return (int)substr($mask, strlen($mask) - strlen(static::incrementable(static::$mask)));
         } else {
             preg_match("#(\(.{0,})\)#i", $mask, $match);
             $incrementable = ltrim($match[1], '() ');
@@ -231,12 +231,12 @@ class CustomAI
     }
 
     /**
-     * Check if database data mask is coherent with actualy mask
+     * Vérifie si la masque de l'instance et de la base de données sont cohérentes
      *
      * @return bool
      * @throws \Exception
      */
-    static function isCoherent()
+    protected static function isCoherent()
     {
         return
             (bool)(strlen(static::rigth_mask()) >= strlen(static::fetch_last()) &&
@@ -244,7 +244,7 @@ class CustomAI
     }
 
     /**
-     * Increment a $number
+     * Incremente le numero $number
      *
      * @param $number
      * @return string
@@ -258,7 +258,7 @@ class CustomAI
     }
 
     /**
-     * Format number after 0
+     * Format le numéro $numero
      *
      * @param $number
      * @return string

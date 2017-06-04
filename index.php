@@ -5,12 +5,11 @@ use Informagenie\CustomAI;
 
 $db = new PDO('sqlite:database.sqlite');
 
-
-
-$cuai = new CustomAI($db, 'Person', 'id');
+$cuai = CustomAI::create(['dsn'=>$db, 'table'=>'Person']);
+echo $cuai;
 if (!empty($_POST)) {
     $req = $db->prepare('INSERT INTO Person VALUES(?, ?, ?)');
-    $success = $req->execute(array($cuai::id(), $_POST['nom'], $_POST['postnom']));
+    $success = $req->execute(array($cuai::auto_increment(), $_POST['nom'], $_POST['postnom']));
 }
 
 ?>
